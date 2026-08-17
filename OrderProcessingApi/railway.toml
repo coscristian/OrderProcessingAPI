@@ -1,0 +1,6 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "./OrderProcessingApi/Dockerfile"
+
+[deploy]
+restartPolicyType = "always"
