@@ -31,7 +31,7 @@ public class OrderService : IOrderService
         var customer = await _customerRepository.GetByIdAsync(request.CustomerId, cancellationToken);
 
         if (customer is null)
-            throw new InvalidOperationException("Customer not found.");
+            throw new NotFoundException($"Customer {request.CustomerId} not found.");
 
         decimal subtotal = 0m;
         var products = new Dictionary<int, OrderProcessing.Domain.Aggregates.ProductAggregate.Product>();
@@ -41,10 +41,10 @@ public class OrderService : IOrderService
             var product = await _productRepository.GetByIdAsync(item.ProductId);
 
             if (product is null)
-                throw new InvalidOperationException($"Product {item.ProductId} not found.");
+                throw new NotFoundException($"Product {item.ProductId} not found.");
 
             if (item.Quantity > product.StockQuantity)
-                throw new InvalidOperationException("Insufficient stock.");
+                throw new ConflictException($"Product {item.ProductId} does not have enough stock.");
 
             products[item.ProductId] = product;
 

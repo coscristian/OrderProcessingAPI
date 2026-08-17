@@ -45,11 +45,14 @@ public class ValidationFilter : IAsyncActionFilter
                         x => x.Key,
                         x => x.Select(e => e.ErrorMessage).ToArray());
 
-                context.Result = new BadRequestObjectResult(new
+                var validationProblemDetails = new ValidationProblemDetails(errors)
                 {
-                    message = "Validation failed.",
-                    errors
-                });
+                    Type = "https://httpstatuses.com/400",
+                    Title = "Validation failed",
+                    Status = StatusCodes.Status400BadRequest
+                };
+
+                context.Result = new BadRequestObjectResult(validationProblemDetails);
 
                 return;
             }

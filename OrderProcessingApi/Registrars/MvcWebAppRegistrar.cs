@@ -1,4 +1,5 @@
 using Asp.Versioning.ApiExplorer;
+using OrderProcessingApi.Filters;
 
 namespace OrderProcessingApi.Registrars;
 
@@ -18,6 +19,8 @@ public class MvcWebAppRegistrar : IWebApplicationRegistrar
             }
         });
         app.UseHttpsRedirection();
+
+        app.UseMiddleware<ExceptionHandlingMiddleware>();
 
         app.UseAuthorization();
         
