@@ -1,4 +1,5 @@
 using OrderProcessingApi.Extensions;
+using OrderProcessingApi.Registrars;
 
 var builder = WebApplication.CreateBuilder(args);
 

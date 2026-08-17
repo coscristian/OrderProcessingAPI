@@ -4,7 +4,7 @@
     container_name: order-processing-sqlserver
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: ""
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
     ports:
       - "1433:1433"
     volumes:
@@ -18,7 +18,7 @@
     container_name: order-processing-api
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: ""
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=OrderProcessingDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;"
     ports:
       - "8080:8080"
     depends_on:

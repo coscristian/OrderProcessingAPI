@@ -18,8 +18,9 @@ public class MvcWebAppRegistrar : IWebApplicationRegistrar
                     description.ApiVersion.ToString());
             }
         });
-        app.UseHttpsRedirection();
 
+        app.UseCors("AllowAngularDev");
+        app.UseHttpsRedirection();
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
         app.UseAuthorization();

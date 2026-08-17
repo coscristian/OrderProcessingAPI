@@ -63,13 +63,23 @@ public class OrderServiceTests
         var mockProductRepo = new Mock<IProductRepository>();
         var mockCustomerRepo = new Mock<ICustomerRepository>();
 
-        mockProductRepo.Setup(p => p.GetByIdAsync(It.IsAny<int>()))
+        mockProductRepo
+            .Setup(p => p.GetByIdAsync(It.IsAny<int>()))
             .ReturnsAsync(product);
 
-        mockCustomerRepo.Setup(c => c.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        mockCustomerRepo
+            .Setup(c => c.GetByIdAsync(
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(customer);
 
-        var discountService = new DiscountService(new IDiscountStrategy[] { new RegularDiscountStrategy(), new PremiumDiscountStrategy(), new VipDiscountStrategy() });
+        var discountService = new DiscountService(
+            new IDiscountStrategy[]
+            {
+                new RegularDiscountStrategy(),
+                new PremiumDiscountStrategy(),
+                new VipDiscountStrategy()
+            });
 
         var service = new OrderService(
             mockOrderRepo.Object,
@@ -77,11 +87,206 @@ public class OrderServiceTests
             mockCustomerRepo.Object,
             discountService);
 
-        var request = new CreateOrderRequest(1, new List<OrderItemRequest> { new OrderItemRequest(1, 5) });
+        var request = new CreateOrderRequest(
+            1,
+            new List<OrderItemRequest>
+            {
+                new OrderItemRequest(1, 5)
+            });
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateAsync(request));
+        var exception = await Assert.ThrowsAsync<ConflictException>(
+            () => service.CreateAsync(request));
 
-        mockOrderRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Equal(
+            "Product 1 does not have enough stock.",
+            exception.Message);
+
+        mockOrderRepo.Verify(
+            r => r.AddAsync(
+                It.IsAny<Domain.Aggregates.OrderAggregate.Order>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        mockOrderRepo.Verify(
+            r => r.SaveChangesAsync(
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+
         Assert.Equal(2, product.StockQuantity);
+    }
+    
+    [Fact]
+    public async Task CreateAsync_CustomerNotFound_ThrowsAndDoesNotPersist()
+    {
+        var mockOrderRepo = new Mock<IOrderRepository>();
+        var mockProductRepo = new Mock<IProductRepository>();
+        var mockCustomerRepo = new Mock<ICustomerRepository>();
+
+        mockCustomerRepo
+            .Setup(c => c.GetByIdAsync(
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Customer?)null);
+
+        var discountService = new DiscountService(
+            new IDiscountStrategy[]
+            {
+                new RegularDiscountStrategy(),
+                new PremiumDiscountStrategy(),
+                new VipDiscountStrategy()
+            });
+
+        var service = new OrderService(
+            mockOrderRepo.Object,
+            mockProductRepo.Object,
+            mockCustomerRepo.Object,
+            discountService);
+
+        var request = new CreateOrderRequest(
+            999,
+            new List<OrderItemRequest>
+            {
+                new OrderItemRequest(1, 2)
+            });
+
+        var exception = await Assert.ThrowsAsync<NotFoundException>(
+            () => service.CreateAsync(request));
+
+        Assert.Equal("Customer 999 not found.", exception.Message);
+
+        mockProductRepo.Verify(
+            r => r.GetByIdAsync(It.IsAny<int>()),
+            Times.Never);
+
+        mockOrderRepo.Verify(
+            r => r.AddAsync(
+                It.IsAny<Domain.Aggregates.OrderAggregate.Order>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        mockOrderRepo.Verify(
+            r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+    
+    [Fact]
+    public async Task CreateAsync_ProductNotFound_ThrowsAndDoesNotPersist()
+    {
+        var customer = Customer.Create("Cust", CustomerTier.Regular);
+
+        var mockOrderRepo = new Mock<IOrderRepository>();
+        var mockProductRepo = new Mock<IProductRepository>();
+        var mockCustomerRepo = new Mock<ICustomerRepository>();
+
+        mockCustomerRepo
+            .Setup(c => c.GetByIdAsync(
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(customer);
+
+        mockProductRepo
+            .Setup(p => p.GetByIdAsync(It.IsAny<int>()))
+            .ReturnsAsync((Product?)null);
+
+        var discountService = new DiscountService(
+            new IDiscountStrategy[]
+            {
+                new RegularDiscountStrategy(),
+                new PremiumDiscountStrategy(),
+                new VipDiscountStrategy()
+            });
+
+        var service = new OrderService(
+            mockOrderRepo.Object,
+            mockProductRepo.Object,
+            mockCustomerRepo.Object,
+            discountService);
+
+        var request = new CreateOrderRequest(
+            1,
+            new List<OrderItemRequest>
+            {
+                new OrderItemRequest(999, 2)
+            });
+
+        var exception = await Assert.ThrowsAsync<NotFoundException>(
+            () => service.CreateAsync(request));
+
+        Assert.Equal(
+            "Product 999 not found.",
+            exception.Message);
+
+        mockOrderRepo.Verify(
+            r => r.AddAsync(
+                It.IsAny<Domain.Aggregates.OrderAggregate.Order>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        mockOrderRepo.Verify(
+            r => r.SaveChangesAsync(
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+    
+    [Fact]
+    public async Task CreateAsync_InvalidQuantity_ThrowsAndDoesNotPersist()
+    {
+        var product = Product.Create("Prod", 100m, 10);
+        var customer = Customer.Create("Cust", CustomerTier.Regular);
+
+        var mockOrderRepo = new Mock<IOrderRepository>();
+        var mockProductRepo = new Mock<IProductRepository>();
+        var mockCustomerRepo = new Mock<ICustomerRepository>();
+
+        mockCustomerRepo
+            .Setup(c => c.GetByIdAsync(
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(customer);
+
+        mockProductRepo
+            .Setup(p => p.GetByIdAsync(It.IsAny<int>()))
+            .ReturnsAsync(product);
+
+        var discountService = new DiscountService(
+            new IDiscountStrategy[]
+            {
+                new RegularDiscountStrategy(),
+                new PremiumDiscountStrategy(),
+                new VipDiscountStrategy()
+            });
+
+        var service = new OrderService(
+            mockOrderRepo.Object,
+            mockProductRepo.Object,
+            mockCustomerRepo.Object,
+            discountService);
+
+        var request = new CreateOrderRequest(
+            1,
+            new List<OrderItemRequest>
+            {
+                new OrderItemRequest(1, 0)
+            });
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(
+            () => service.CreateAsync(request));
+
+        Assert.Equal(
+            "Quantity must be greater than zero. (Parameter 'quantity')",
+            exception.Message);
+
+        mockOrderRepo.Verify(
+            r => r.AddAsync(
+                It.IsAny<Domain.Aggregates.OrderAggregate.Order>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        mockOrderRepo.Verify(
+            r => r.SaveChangesAsync(
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        Assert.Equal(10, product.StockQuantity);
     }
 }
