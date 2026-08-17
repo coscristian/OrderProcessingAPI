@@ -14,6 +14,8 @@ public class OrderProcessingDbContext : DbContext
 
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<OrderProcessing.Domain.Aggregates.OrderAggregate.Order> Orders => Set<OrderProcessing.Domain.Aggregates.OrderAggregate.Order>();
+    public DbSet<OrderProcessing.Domain.Aggregates.OrderAggregate.OrderItem> OrderItems => Set<OrderProcessing.Domain.Aggregates.OrderAggregate.OrderItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

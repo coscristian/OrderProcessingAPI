@@ -18,6 +18,7 @@ public static class DependencyInjection
 
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<OrderProcessing.Application.Services.OrderService.Interfaces.IOrderRepository, OrderProcessing.Infrastructure.Repositories.OrderRepository>();
 
         return services;
     }
